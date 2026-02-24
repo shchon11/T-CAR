@@ -83,12 +83,52 @@ data/
 
 ## Environment Setup
 
+Create and activate a virtual environment before running any training/inference command.
+
+### 1) Create venv (default: `.venv`)
+
 ```bash
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
 bash tools/setup_stage2_venv.sh
 source "$PROJECT_ROOT/.venv/bin/activate"
+```
+
+### 2) Create venv with custom path (optional)
+
+```bash
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$PROJECT_ROOT"
+
+bash tools/setup_stage2_venv.sh "$PROJECT_ROOT/.venv-stage2"
+source "$PROJECT_ROOT/.venv-stage2/bin/activate"
+```
+
+### 3) Verify installation
+
+```bash
+python -c "import torch, ultralytics; print(torch.__version__, torch.cuda.is_available(), ultralytics.__version__)"
+```
+
+### 4) Use the venv with `./commands`
+
+`./commands` auto-selects Python in this order:
+
+- `$PROJECT_ROOT/.venv/bin/python`
+- `$PROJECT_ROOT/.venv-stage2/bin/python`
+- `python3`
+
+If you want to force a specific interpreter:
+
+```bash
+PYTHON_BIN="$PROJECT_ROOT/.venv-stage2/bin/python" ./commands infer-stage2
+```
+
+To leave the environment:
+
+```bash
+deactivate
 ```
 
 ## Command Entry (`tools/commands`)
