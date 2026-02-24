@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="/data4/dongmin/t-car"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${ROOT_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 VENV_DIR="${1:-$ROOT_DIR/.venv}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-$ROOT_DIR/tools/requirements.txt}"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "[ERR] Python binary not found: $PYTHON_BIN" >&2
+  exit 1
+fi
+
+if [ ! -f "$REQUIREMENTS_FILE" ]; then
+  echo "[ERR] requirements file not found: $REQUIREMENTS_FILE" >&2
   exit 1
 fi
 
@@ -24,7 +31,7 @@ python -m pip install --index-url https://download.pytorch.org/whl/cu121 \
   torch==2.4.1 torchvision==0.19.1
 
 echo "[INFO] Installing stage2 requirements"
-python -m pip install -r "$ROOT_DIR/tools/requirements.txt"
+python -m pip install -r "$REQUIREMENTS_FILE"
 
 echo "[INFO] Verifying installation"
 python - <<'PY'

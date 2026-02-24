@@ -1,6 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve project paths dynamically (no hardcoded absolute paths).
+TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
+DATA_DIR="$PROJECT_ROOT/data"
+RUNS_DIR="$TOOLS_DIR/runs"
+STAGE2_DIR="$TOOLS_DIR/stage2"
+
+# 0) (optional) stage1 train
 CUDA_VISIBLE_DEVICES=0,1,2,3 yolo detect train \
-  data=/data4/dongmin/t-car/data/yaml/traffic_stage1.yaml \
-  model=/data4/dongmin/t-car/tools/yolo11s.pt \
+  data="$DATA_DIR/yaml/traffic_stage1.yaml" \
+  model="$TOOLS_DIR/yolo11s.pt" \
   imgsz=640 \
   epochs=200 \
   batch=256 \
@@ -10,55 +21,62 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 yolo detect train \
   amp=True \
   name=traffic_stage1
 
-  yolo detect predict \
-  model=runs/detect/traffic_stage14/weights/best.pt \
-  source=/data4/dongmin/t-car/data/yolo/images/val \
+# 1) (optional) stage1 validation predict
+yolo detect predict \
+  model="$RUNS_DIR/detect/traffic_stage14/weights/best.pt" \
+  source="$DATA_DIR/yolo/images/val" \
   imgsz=640 \
   conf=0.25 \
   device=0 \
   name=traffic_stage1_val
 
-# 1) stage2 학습셋 준비는 GT bbox 직접 사용 (stage1 preds 불필요)
-
-# 2) train split 크롭/메타 생성
-python3 tools/stage2_build_dataset.py \
+# 2) stage2 dataset build - train (GT box direct)
+python3 "$STAGE2_DIR/stage2_build_dataset.py" \
   --box-source gt \
-  --yolo-image-dir /data4/dongmin/t-car/data/yolo/images/train \
-  --raw-json-root /data4/dongmin/t-car/data/raw \
+  --yolo-image-dir "$DATA_DIR/yolo/images/train" \
+  --raw-json-root "$DATA_DIR/raw" \
   --split train \
-  --out-crops-root /data4/dongmin/t-car/data/stage2/crops \
-  --out-meta /data4/dongmin/t-car/data/stage2/meta/train.csv \
-  --summary-json /data4/dongmin/t-car/data/stage2/meta/train_summary.json \
+  --out-crops-root "$DATA_DIR/stage2/crops" \
+  --out-meta "$DATA_DIR/stage2/meta/train.csv" \
+  --summary-json "$DATA_DIR/stage2/meta/train_summary.json" \
   --padding-ratio 0.1 \
   --min-aspect-ratio 2.0
 
-# 3) val split 크롭/메타 생성
-python3 tools/stage2_build_dataset.py \
+# 3) stage2 dataset build - val (GT box direct)
+python3 "$STAGE2_DIR/stage2_build_dataset.py" \
   --box-source gt \
-  --yolo-image-dir /data4/dongmin/t-car/data/yolo/images/val \
-  --raw-json-root /data4/dongmin/t-car/data/raw \
+  --yolo-image-dir "$DATA_DIR/yolo/images/val" \
+  --raw-json-root "$DATA_DIR/raw" \
   --split val \
-  --out-crops-root /data4/dongmin/t-car/data/stage2/crops \
-  --out-meta /data4/dongmin/t-car/data/stage2/meta/val.csv \
-  --summary-json /data4/dongmin/t-car/data/stage2/meta/val_summary.json \
+  --out-crops-root "$DATA_DIR/stage2/crops" \
+  --out-meta "$DATA_DIR/stage2/meta/val.csv" \
+  --summary-json "$DATA_DIR/stage2/meta/val_summary.json" \
   --padding-ratio 0.1 \
   --min-aspect-ratio 2.0
 
-# 4) stage2 학습
-python3 tools/stage2_train_mobilenet.py \
-  --train-csv /data4/dongmin/t-car/data/stage2/meta/train.csv \
-  --val-csv /data4/dongmin/t-car/data/stage2/meta/val.csv \
-  --num-classes 4 --backbone mobilenet_v3_large --epochs 200 --batch-size 256 --lr 3e-4 \
+# 4) stage2 train (MobileNetV3-Large)
+python3 "$STAGE2_DIR/stage2_train_mobilenet.py" \
+  --train-csv "$DATA_DIR/stage2/meta/train.csv" \
+  --val-csv "$DATA_DIR/stage2/meta/val.csv" \
+  --num-classes 4 \
+  --backbone mobilenet_v3_large \
+  --epochs 200 \
+  --batch-size 256 \
+  --lr 3e-4 \
   --patience 200 \
   --device cuda:0,1,2,3 \
-  --out-dir /data4/dongmin/t-car/tools/runs/classify/traffic_stage2_mnv3s
+  --out-dir "$RUNS_DIR/classify/traffic_stage2_mnv3s"
 
-# 5) 최종 2-stage 추론
-python3 tools/stage2_infer.py \
-  --stage1-weights /data4/dongmin/t-car/tools/runs/detect/traffic_stage14/weights/best.pt \
-  --stage2-weights /data4/dongmin/t-car/tools/runs/classify/traffic_stage2_mnv3s/weights/best.pth \
-  --source /data4/dongmin/t-car/data/yolo/images/val \
-  --out-json-dir /data4/dongmin/t-car/tools/runs/two_stage_infer/json \
-  --out-vis-dir /data4/dongmin/t-car/tools/runs/two_stage_infer/vis \
-  --conf 0.40 --min-aspect-ratio 2.0 --padding-ratio 0.1 --imgsz 640 \
-  --device 0 --cls-device cuda:0
+# 5) final 2-stage inference
+python3 "$STAGE2_DIR/stage2_infer.py" \
+  --stage1-weights "$RUNS_DIR/detect/traffic_stage14/weights/best.pt" \
+  --stage2-weights "$RUNS_DIR/classify/traffic_stage2_mnv3s/weights/best.pth" \
+  --source "$DATA_DIR/yolo/images/val" \
+  --out-json-dir "$RUNS_DIR/two_stage_infer/json" \
+  --out-vis-dir "$RUNS_DIR/two_stage_infer/vis" \
+  --conf 0.40 \
+  --min-aspect-ratio 2.0 \
+  --padding-ratio 0.1 \
+  --imgsz 640 \
+  --device 0 \
+  --cls-device cuda:0

@@ -10,16 +10,22 @@ from pathlib import Path
 # =========================
 # CONFIG
 # =========================
-ROOT_055 = Path("/data4/dongmin/t-car/data/raw/055.신호등-도로표지판_인지_영상(수도권)/01.데이터/1.Training")
+REPO_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[2]))
+ROOT_055 = Path(
+    os.environ.get(
+        "ROOT_055",
+        str(REPO_ROOT / "data/raw/055.신호등-도로표지판_인지_영상(수도권)/01.데이터/1.Training"),
+    )
+)
 
 IMG_TAR_DIR = ROOT_055 / "원천데이터_0610" / "1280_720" / "daylight"
 LBL_TAR_DIR = ROOT_055 / "라벨링데이터_1026" / "1280_720" / "daylight"
 
 # 작업용 임시 extract (필요 최소만 쌓이게 tar별로 비우면서 진행)
-TMP_IMG_DIR = Path("/data4/dongmin/t-car/data/extract/tmp_images")
-TMP_LBL_DIR = Path("/data4/dongmin/t-car/data/extract/tmp_labels")
+TMP_IMG_DIR = Path(os.environ.get("TMP_IMG_DIR", str(REPO_ROOT / "data/extract/tmp_images")))
+TMP_LBL_DIR = Path(os.environ.get("TMP_LBL_DIR", str(REPO_ROOT / "data/extract/tmp_labels")))
 
-YOLO_ROOT = Path("/data4/dongmin/t-car/data/yolo")
+YOLO_ROOT = Path(os.environ.get("YOLO_ROOT", str(REPO_ROOT / "data/yolo")))
 OUT_IMG = {"train": YOLO_ROOT / "images/train", "val": YOLO_ROOT / "images/val"}
 OUT_LBL = {"train": YOLO_ROOT / "labels/train", "val": YOLO_ROOT / "labels/val"}
 

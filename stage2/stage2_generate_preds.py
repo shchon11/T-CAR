@@ -30,24 +30,29 @@ from stage2_utils import (
 )
 
 
+def default_project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
 def parse_args() -> argparse.Namespace:
+    project_root = default_project_root()
     parser = argparse.ArgumentParser(description="Generate stage1 predictions for stage2 pipeline")
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=Path("/data4/dongmin/t-car/tools/runs/detect/traffic_stage14/weights/best.pt"),
+        default=project_root / "tools/runs/detect/traffic_stage14/weights/best.pt",
         help="Path to stage1 YOLO weight (.pt)",
     )
     parser.add_argument(
         "--source-dir",
         type=Path,
-        default=Path("/data4/dongmin/t-car/data/yolo/images"),
+        default=project_root / "data/yolo/images",
         help="Root containing train/val image dirs (*.jpg only)",
     )
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=Path("/data4/dongmin/t-car/data/stage2/preds"),
+        default=project_root / "data/stage2/preds",
         help="Prediction output root",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Detection confidence threshold")
