@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-02-24T11:34:55",
+  "stage_order": [
+    "traffic_stage12",
+    "traffic_stage14"
+  ],
+  "epochs_per_stage": [
+    50,
+    20
+  ],
+  "total_epochs": 70,
+  "boundary_epoch": 50,
+  "results_csv": "/data4/dongmin/t-car/tools/runs/detect/traffic_stage12_14_merged/results.csv",
+  "results_plot": "/data4/dongmin/t-car/tools/runs/detect/traffic_stage12_14_merged/results.png",
+  "final_artifacts_from": "traffic_stage14",
+  "notes": [
+    "confusion matrices and Box* curves are copied from run-b final model",
+    "merged results.csv is stage12 rows followed by stage14 rows with epoch renumbered"
+  ]
+}
