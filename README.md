@@ -32,7 +32,7 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 - Framework: Ultralytics YOLO
 - Base model: `yolo11s`
 - Default output path: `tools/runs/traffic_stage1`
-- Canonical weight path: `tools/weights/stage1_best.pt`
+- Canonical weight path: `tools/weights/stage1_scratch.pt`
 - Main artifacts: `weights/best.pt`, `results.csv`, curve/matrix images
 
 ### Stage2
@@ -61,7 +61,8 @@ tools/
     traffic_stage1/
     traffic_stage2/
   weights/
-    stage1_best.pt
+    stage1_scratch.pt
+    stage1_pre_trained.pt
     stage2_best.pth
   commands
   setup_stage2_venv.sh

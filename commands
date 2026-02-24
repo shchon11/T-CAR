@@ -1,9 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Support both layouts:
+# 1) repo-root/tools/commands with stage scripts under tools/
+# 2) repo-root/commands with stage scripts under repo root
+if [[ -d "$SCRIPT_DIR/data" && -d "$SCRIPT_DIR/stage1" && -d "$SCRIPT_DIR/stage2" ]]; then
+  PROJECT_ROOT="$SCRIPT_DIR"
+  TOOLS_DIR="$SCRIPT_DIR"
+elif [[ -d "$SCRIPT_DIR/../data" && -d "$SCRIPT_DIR/stage1" && -d "$SCRIPT_DIR/stage2" ]]; then
+  TOOLS_DIR="$SCRIPT_DIR"
+  PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+  # Fallback for unexpected layouts: keep legacy behavior.
+  TOOLS_DIR="$SCRIPT_DIR"
+  PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
+fi
+
 DATA_DIR="$PROJECT_ROOT/data"
+RUNS_DIR="$TOOLS_DIR/runs"
 INFER_DIR="$TOOLS_DIR/infer"
 WEIGHTS_DIR="$TOOLS_DIR/weights"
 STAGE1_DIR="$TOOLS_DIR/stage1"
@@ -74,8 +90,8 @@ run_stage1_train() {
 
   local stage1_best="$RUNS_DIR/traffic_stage1/weights/best.pt"
   if [[ -f "$stage1_best" ]]; then
-    cp -f "$stage1_best" "$WEIGHTS_DIR/stage1_best.pt"
-    echo "[INFO] synced stage1 weight -> $WEIGHTS_DIR/stage1_best.pt"
+    cp -f "$stage1_best" "$WEIGHTS_DIR/stage1_scratch.pt"
+    echo "[INFO] synced stage1 weight -> $WEIGHTS_DIR/stage1_scratch.pt"
   else
     echo "[WARN] stage1 best weight not found: $stage1_best"
   fi
@@ -87,8 +103,8 @@ run_sync_weights() {
   local src_stage2="$RUNS_DIR/traffic_stage2/weights/best.pth"
 
   if [[ -f "$src_stage1" ]]; then
-    cp -f "$src_stage1" "$WEIGHTS_DIR/stage1_best.pt"
-    echo "[INFO] synced stage1 -> $WEIGHTS_DIR/stage1_best.pt"
+    cp -f "$src_stage1" "$WEIGHTS_DIR/stage1_scratch.pt"
+    echo "[INFO] synced stage1 -> $WEIGHTS_DIR/stage1_scratch.pt"
   else
     echo "[WARN] missing stage1 best: $src_stage1"
   fi
@@ -103,7 +119,7 @@ run_sync_weights() {
 
 run_stage1_predict() {
   yolo detect predict \
-    model="$WEIGHTS_DIR/stage1_best.pt" \
+    model="$WEIGHTS_DIR/stage1_scratch.pt" \
     source="$DATA_DIR/yolo/images/val" \
     imgsz=640 \
     conf=0.25 \
@@ -156,12 +172,23 @@ run_train_stage2() {
 }
 
 run_infer_stage2() {
+  local source_dir
+  if [[ -d "$DATA_DIR/yolo/images/val" ]]; then
+    source_dir="$DATA_DIR/yolo/images/val"
+  elif [[ -d "$DATA_DIR/images/val" ]]; then
+    source_dir="$DATA_DIR/images/val"
+  elif [[ -d "$DATA_DIR/images" ]]; then
+    source_dir="$DATA_DIR/images"
+  else
+    source_dir="$DATA_DIR"
+  fi
+
   "$PYTHON_BIN" "$STAGE2_DIR/stage2_infer.py" \
     --stage1-weights "$WEIGHTS_DIR/stage1_scratch.pt" \
     --stage2-weights "$WEIGHTS_DIR/stage2_best.pth" \
-    --source "$DATA_DIR/images" \
-    --out-json-dir "$INFER_DIR/infer/json" \
-    --out-vis-dir "$INFER_DIR/infer/vis" \
+    --source "$source_dir" \
+    --out-json-dir "$INFER_DIR/json" \
+    --out-vis-dir "$INFER_DIR/vis" \
     --conf 0.40 \
     --min-aspect-ratio 2.0 \
     --padding-ratio 0.1 \

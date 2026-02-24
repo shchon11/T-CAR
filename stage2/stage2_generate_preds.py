@@ -43,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/weights/stage1_best.pt",
+        default=project_root / "tools/weights/stage1_scratch.pt",
         help="Path to stage1 YOLO weight (.pt)",
     )
     parser.add_argument(

@@ -1,0 +1,27 @@
+{
+  "image": "/data4/dongmin/t-car/tools/data/images/000221.jpg",
+  "detections": [
+    {
+      "bbox": [
+        1316.8549,
+        278.0698,
+        1345.7603,
+        288.2137
+      ],
+      "det_conf": 0.657625,
+      "color": "green",
+      "color_conf": 0.99943
+    },
+    {
+      "bbox": [
+        1271.1528,
+        276.9614,
+        1299.6301,
+        288.0242
+      ],
+      "det_conf": 0.49484,
+      "color": "green",
+      "color_conf": 0.997771
+    }
+  ]
+}

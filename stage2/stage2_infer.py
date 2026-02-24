@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/weights/stage1_best.pt",
+        default=project_root / "tools/weights/stage1_scratch.pt",
         help="Stage1 YOLO detector checkpoint",
     )
     parser.add_argument(
@@ -50,13 +50,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--out-json-dir",
         type=Path,
-        default=project_root / "tools/runs/traffic_stage2/infer/json",
+        default=project_root / "tools/infer/json",
         help="Output directory for per-image JSON results",
     )
     parser.add_argument(
         "--out-vis-dir",
         type=Path,
-        default=project_root / "tools/runs/traffic_stage2/infer/vis",
+        default=project_root / "tools/infer/vis",
         help="Output directory for visualization images",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Stage1 detection confidence")
