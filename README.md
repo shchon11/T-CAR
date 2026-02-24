@@ -91,7 +91,10 @@ Create and activate a virtual environment before running any training/inference 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
-bash tools/setup_stage2_venv.sh
+SETUP_SH="./setup_stage2_venv.sh"
+if [ ! -f "$SETUP_SH" ]; then SETUP_SH="./tools/setup_stage2_venv.sh"; fi
+
+bash "$SETUP_SH"
 source "$PROJECT_ROOT/.venv/bin/activate"
 ```
 
@@ -101,7 +104,10 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
-bash tools/setup_stage2_venv.sh "$PROJECT_ROOT/.venv-stage2"
+SETUP_SH="./setup_stage2_venv.sh"
+if [ ! -f "$SETUP_SH" ]; then SETUP_SH="./tools/setup_stage2_venv.sh"; fi
+
+bash "$SETUP_SH" "$PROJECT_ROOT/.venv-stage2"
 source "$PROJECT_ROOT/.venv-stage2/bin/activate"
 ```
 
