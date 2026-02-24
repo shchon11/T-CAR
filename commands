@@ -4,7 +4,7 @@ set -euo pipefail
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
-RUNS_DIR="$TOOLS_DIR/runs"
+INFER_DIR="$TOOLS_DIR/infer"
 WEIGHTS_DIR="$TOOLS_DIR/weights"
 STAGE1_DIR="$TOOLS_DIR/stage1"
 STAGE2_DIR="$TOOLS_DIR/stage2"
@@ -157,11 +157,11 @@ run_train_stage2() {
 
 run_infer_stage2() {
   "$PYTHON_BIN" "$STAGE2_DIR/stage2_infer.py" \
-    --stage1-weights "$WEIGHTS_DIR/stage1_best.pt" \
+    --stage1-weights "$WEIGHTS_DIR/stage1_scratch.pt" \
     --stage2-weights "$WEIGHTS_DIR/stage2_best.pth" \
-    --source "$DATA_DIR/yolo/images/val" \
-    --out-json-dir "$RUNS_DIR/traffic_stage2/infer/json" \
-    --out-vis-dir "$RUNS_DIR/traffic_stage2/infer/vis" \
+    --source "$DATA_DIR/images" \
+    --out-json-dir "$INFER_DIR/infer/json" \
+    --out-vis-dir "$INFER_DIR/infer/vis" \
     --conf 0.40 \
     --min-aspect-ratio 2.0 \
     --padding-ratio 0.1 \

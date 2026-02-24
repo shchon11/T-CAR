@@ -127,25 +127,25 @@ If path arguments are omitted, project-root-based defaults are used.
 1. Train Stage1 (if needed)
 
 ```bash
-bash tools/commands stage1-train
+bash ./commands stage1-train
 ```
 
 2. Build Stage2 dataset
 
 ```bash
-bash tools/commands build-all
+bash ./commands build-all
 ```
 
 3. Train Stage2
 
 ```bash
-bash tools/commands train-stage2
+bash ./commands train-stage2
 ```
 
 4. Run final 2-stage inference
 
 ```bash
-bash tools/commands infer-stage2
+bash ./commands infer-stage2
 ```
 
 ## Output Paths
