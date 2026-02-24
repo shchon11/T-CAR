@@ -92,11 +92,11 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 
 ## Command Entry (`tools/commands`)
 
-`tools/commands` resolves default paths using the current structure (`stage1`, `stage2`, `runs/traffic_stage1`, `runs/traffic_stage2`).
+`./commands` resolves default paths using the current structure (`stage1`, `stage2`, `runs/traffic_stage1`, `runs/traffic_stage2`).
 
 ```bash
-bash tools/commands --help
-bash tools/commands paths
+./commands --help
+./commands paths
 ```
 
 Main subcommands:
@@ -150,9 +150,9 @@ If path arguments are omitted, project-root-based defaults are used.
 
 ## Output Paths
 
-- Stage1 best weight (canonical): `tools/weights/stage1_best.pt`
-- Stage2 best weight (canonical): `tools/weights/stage2_best.pth`
-- Stage1 run checkpoint: `tools/runs/traffic_stage1/weights/best.pt`
-- Stage2 run checkpoint: `tools/runs/traffic_stage2/weights/best.pth`
-- Inference JSON: `tools/runs/traffic_stage2/infer/json`
-- Inference visualization: `tools/runs/traffic_stage2/infer/vis`
+- Stage1 best weight (canonical): `./weights/stage1_scratch.pt`
+- Stage2 best weight (canonical): `./weights/stage2_best.pth`
+- Stage1 run checkpoint: `./runs/traffic_stage1/weights/best.pt`
+- Stage2 run checkpoint: `./runs/traffic_stage2/weights/best.pth`
+- Inference JSON: `./infer/json`
+- Inference visualization: `./infer/vis`
