@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -z "${ROOT_DIR:-}" ]]; then
   # Support both layouts:
   # 1) repo-root/setup_stage2_venv.sh
-  # 2) repo-root/tools/setup_stage2_venv.sh
+  # 2) script placed in a subdirectory (fallback to parent)
   if [[ -d "$SCRIPT_DIR/data" ]]; then
     ROOT_DIR="$SCRIPT_DIR"
   elif [[ -d "$SCRIPT_DIR/../data" ]]; then
@@ -23,10 +23,7 @@ REQUIREMENTS_FILE="${REQUIREMENTS_FILE:-}"
 if [[ -z "$REQUIREMENTS_FILE" ]]; then
   REQUIREMENTS_CANDIDATES=(
     "$SCRIPT_DIR/requirements.txt"
-    "$SCRIPT_DIR/tools/requirements.txt"
-    "$SCRIPT_DIR/../tools/requirements.txt"
     "$ROOT_DIR/requirements.txt"
-    "$ROOT_DIR/tools/requirements.txt"
   )
   for candidate in "${REQUIREMENTS_CANDIDATES[@]}"; do
     if [[ -f "$candidate" ]]; then
@@ -45,10 +42,7 @@ if [ ! -f "$REQUIREMENTS_FILE" ]; then
   echo "[ERR] requirements file not found: $REQUIREMENTS_FILE" >&2
   echo "[ERR] checked default candidates:" >&2
   echo "  - $SCRIPT_DIR/requirements.txt" >&2
-  echo "  - $SCRIPT_DIR/tools/requirements.txt" >&2
-  echo "  - $SCRIPT_DIR/../tools/requirements.txt" >&2
   echo "  - $ROOT_DIR/requirements.txt" >&2
-  echo "  - $ROOT_DIR/tools/requirements.txt" >&2
   exit 1
 fi
 

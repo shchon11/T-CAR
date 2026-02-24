@@ -16,15 +16,24 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.models import mobilenet_v3_large, mobilenet_v3_small
 
-from stage2_utils import CLASS_NAMES, ensure_dir, is_horizontal_bbox, list_images, pad_bbox
+from stage2_utils import (
+    CLASS_NAMES,
+    ensure_dir,
+    is_horizontal_bbox,
+    list_images,
+    pad_bbox,
+    resolve_data_root,
+    resolve_workspace_root,
+)
 
 
-def default_project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+def default_workspace_root() -> Path:
+    return resolve_workspace_root(Path(__file__))
 
 
 def parse_args() -> argparse.Namespace:
-    project_root = default_project_root()
+    workspace_root = default_workspace_root()
+    data_root = resolve_data_root(workspace_root)
     parser = argparse.ArgumentParser(
         description="Two-stage traffic-light color inference",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -32,31 +41,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/weights/stage1_scratch.pt",
+        default=workspace_root / "weights/stage1_scratch.pt",
         help="Stage1 YOLO detector checkpoint",
     )
     parser.add_argument(
         "--stage2-weights",
         type=Path,
-        default=project_root / "tools/weights/stage2_best.pth",
+        default=workspace_root / "weights/stage2_best.pth",
         help="Stage2 classifier checkpoint",
     )
     parser.add_argument(
         "--source",
         type=Path,
-        default=project_root / "data/yolo/images/val",
+        default=data_root / "yolo/images/val",
         help="Single image or directory",
     )
     parser.add_argument(
         "--out-json-dir",
         type=Path,
-        default=project_root / "tools/infer/json",
+        default=workspace_root / "infer/json",
         help="Output directory for per-image JSON results",
     )
     parser.add_argument(
         "--out-vis-dir",
         type=Path,
-        default=project_root / "tools/infer/vis",
+        default=workspace_root / "infer/vis",
         help="Output directory for visualization images",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Stage1 detection confidence")

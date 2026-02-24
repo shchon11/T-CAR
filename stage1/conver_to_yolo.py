@@ -8,10 +8,20 @@ import random
 import shutil
 from pathlib import Path
 
+
+def detect_workspace_root() -> Path:
+    script_dir = Path(__file__).resolve().parent
+    candidates = [script_dir.parent, script_dir.parent.parent]
+    for base in candidates:
+        if (base / "stage1").is_dir() and (base / "stage2").is_dir():
+            return base
+    return script_dir.parent
+
+
 # =========================
 # CONFIG
 # =========================
-REPO_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parents[2]))
+REPO_ROOT = Path(os.environ.get("PROJECT_ROOT", detect_workspace_root()))
 ROOT_055 = Path(
     os.environ.get(
         "ROOT_055",

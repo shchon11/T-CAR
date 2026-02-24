@@ -31,8 +31,8 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 
 - Framework: Ultralytics YOLO
 - Base model: `yolo11s`
-- Default output path: `tools/runs/traffic_stage1`
-- Canonical weight path: `tools/weights/stage1_scratch.pt`
+- Default output path: `runs/traffic_stage1`
+- Canonical weight path: `weights/stage1_scratch.pt`
 - Main artifacts: `weights/best.pt`, `results.csv`, curve/matrix images
 
 ### Stage2
@@ -41,32 +41,31 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 - Default backbone: `MobileNetV3-Large`
 - Optional backbone: `MobileNetV3-Small`
 - Input size: `224x224`
-- Default output path: `tools/runs/traffic_stage2`
-- Canonical weight path: `tools/weights/stage2_best.pth`
+- Default output path: `runs/traffic_stage2`
+- Canonical weight path: `weights/stage2_best.pth`
 - Main artifacts: `weights/best.pth`, `results.csv`, `confusion_matrix*.csv`, plots
 
 ## Directory Structure
 
 ```text
-tools/
-  stage1/
-    conver_to_yolo.py
-  stage2/
-    stage2_generate_preds.py
-    stage2_build_dataset.py
-    stage2_train_mobilenet.py
-    stage2_infer.py
-    stage2_utils.py
-  runs/
-    traffic_stage1/
-    traffic_stage2/
-  weights/
-    stage1_scratch.pt
-    stage1_pre_trained.pt
-    stage2_best.pth
-  commands
-  setup_stage2_venv.sh
-  requirements.txt
+stage1/
+  conver_to_yolo.py
+stage2/
+  stage2_generate_preds.py
+  stage2_build_dataset.py
+  stage2_train_mobilenet.py
+  stage2_infer.py
+  stage2_utils.py
+runs/
+  traffic_stage1/
+  traffic_stage2/
+weights/
+  stage1_scratch.pt
+  stage1_pre_trained.pt
+  stage2_best.pth
+commands
+setup_stage2_venv.sh
+requirements.txt
 ```
 
 Default data locations (relative to project root):
@@ -91,10 +90,7 @@ Create and activate a virtual environment before running any training/inference 
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
-SETUP_SH="./setup_stage2_venv.sh"
-if [ ! -f "$SETUP_SH" ]; then SETUP_SH="./tools/setup_stage2_venv.sh"; fi
-
-bash "$SETUP_SH"
+bash ./setup_stage2_venv.sh
 source "$PROJECT_ROOT/.venv/bin/activate"
 ```
 
@@ -104,10 +100,7 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$PROJECT_ROOT"
 
-SETUP_SH="./setup_stage2_venv.sh"
-if [ ! -f "$SETUP_SH" ]; then SETUP_SH="./tools/setup_stage2_venv.sh"; fi
-
-bash "$SETUP_SH" "$PROJECT_ROOT/.venv-stage2"
+bash ./setup_stage2_venv.sh "$PROJECT_ROOT/.venv-stage2"
 source "$PROJECT_ROOT/.venv-stage2/bin/activate"
 ```
 
@@ -137,7 +130,7 @@ To leave the environment:
 deactivate
 ```
 
-## Command Entry (`tools/commands`)
+## Command Entry (`./commands`)
 
 `./commands` resolves default paths using the current structure (`stage1`, `stage2`, `runs/traffic_stage1`, `runs/traffic_stage2`).
 
@@ -148,7 +141,7 @@ deactivate
 
 Main subcommands:
 
-- `sync-weights`: copy `best.pt`/`best.pth` from run dirs into `tools/weights`
+- `sync-weights`: copy `best.pt`/`best.pth` from run dirs into `weights/`
 - `stage1-train`: train Stage1 YOLO detector
 - `stage1-predict`: run Stage1 prediction
 - `build-train`, `build-val`, `build-all`: build Stage2 crop/CSV dataset
@@ -160,11 +153,11 @@ Main subcommands:
 All key scripts expose argparse help with descriptions and defaults.
 
 ```bash
-python tools/stage1/conver_to_yolo.py --help
-python tools/stage2/stage2_generate_preds.py --help
-python tools/stage2/stage2_build_dataset.py --help
-python tools/stage2/stage2_train_mobilenet.py --help
-python tools/stage2/stage2_infer.py --help
+python stage1/conver_to_yolo.py --help
+python stage2/stage2_generate_preds.py --help
+python stage2/stage2_build_dataset.py --help
+python stage2/stage2_train_mobilenet.py --help
+python stage2/stage2_infer.py --help
 ```
 
 If path arguments are omitted, project-root-based defaults are used.

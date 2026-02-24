@@ -26,16 +26,19 @@ from stage2_utils import (
     ensure_dir,
     is_horizontal_bbox,
     parse_pred_label_file,
+    resolve_data_root,
+    resolve_workspace_root,
     xyxy_to_yolo_norm,
 )
 
 
-def default_project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+def default_workspace_root() -> Path:
+    return resolve_workspace_root(Path(__file__))
 
 
 def parse_args() -> argparse.Namespace:
-    project_root = default_project_root()
+    workspace_root = default_workspace_root()
+    data_root = resolve_data_root(workspace_root)
     parser = argparse.ArgumentParser(
         description="Generate stage1 predictions for stage2 pipeline",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -43,19 +46,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/weights/stage1_scratch.pt",
+        default=workspace_root / "weights/stage1_scratch.pt",
         help="Path to stage1 YOLO weight (.pt)",
     )
     parser.add_argument(
         "--source-dir",
         type=Path,
-        default=project_root / "data/yolo/images",
+        default=data_root / "yolo/images",
         help="Root containing train/val image dirs (*.jpg only)",
     )
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=project_root / "data/stage2/preds",
+        default=data_root / "stage2/preds",
         help="Prediction output root (split dirs will be created under this path)",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Detection confidence threshold")

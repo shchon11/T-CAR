@@ -23,6 +23,8 @@ from stage2_utils import (
     map_attribute_to_label,
     pad_bbox,
     parse_pred_label_file,
+    resolve_data_root,
+    resolve_workspace_root,
 )
 
 
@@ -46,12 +48,13 @@ CSV_COLUMNS = [
 ]
 
 
-def default_project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+def default_workspace_root() -> Path:
+    return resolve_workspace_root(Path(__file__))
 
 
 def parse_args() -> argparse.Namespace:
-    project_root = default_project_root()
+    workspace_root = default_workspace_root()
+    data_root = resolve_data_root(workspace_root)
     parser = argparse.ArgumentParser(
         description="Build stage2 classification dataset (GT-direct or stage1-pred matched)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -78,7 +81,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--raw-json-root",
         type=Path,
-        default=project_root / "data/raw",
+        default=data_root / "raw",
         help="Raw json root",
     )
     parser.add_argument(
@@ -91,7 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--out-crops-root",
         type=Path,
-        default=project_root / "data/stage2/crops",
+        default=data_root / "stage2/crops",
         help="Output crop root",
     )
     parser.add_argument(
@@ -127,11 +130,11 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
 
     if args.yolo_image_dir is None:
-        args.yolo_image_dir = project_root / "data/yolo/images" / args.split
+        args.yolo_image_dir = data_root / "yolo/images" / args.split
     if args.out_meta is None:
-        args.out_meta = project_root / "data/stage2/meta" / f"{args.split}.csv"
+        args.out_meta = data_root / "stage2/meta" / f"{args.split}.csv"
     if args.box_source == "pred" and args.pred_label_dir is None:
-        args.pred_label_dir = project_root / "data/stage2/preds" / args.split / "labels"
+        args.pred_label_dir = data_root / "stage2/preds" / args.split / "labels"
     return args
 
 

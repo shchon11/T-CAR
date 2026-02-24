@@ -17,6 +17,34 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 COLOR_KEYS = {"red", "yellow", "green"}
 
 
+def resolve_workspace_root(script_file: Path) -> Path:
+    """Resolve workspace root for both layouts.
+
+    Supported layouts:
+    1) <root>/stage1, <root>/stage2, <root>/weights, <root>/runs
+    2) <repo>/<subdir>/stage1, <repo>/<subdir>/stage2, ...
+    """
+    script_path = Path(script_file).resolve()
+    candidates = [
+        script_path.parent,  # e.g. <root>/stage2
+        script_path.parent.parent,  # e.g. <root>
+        script_path.parent.parent.parent,  # fallback one level up
+    ]
+    for base in candidates:
+        if (base / "stage1").is_dir() and (base / "stage2").is_dir():
+            return base
+    return script_path.parent.parent
+
+
+def resolve_data_root(workspace_root: Path) -> Path:
+    """Resolve data root near workspace root."""
+    workspace_root = Path(workspace_root)
+    for candidate in (workspace_root / "data", workspace_root.parent / "data"):
+        if candidate.exists():
+            return candidate
+    return workspace_root / "data"
+
+
 def list_images(source: Path) -> List[Path]:
     """List image files from a file or directory."""
     source = Path(source)

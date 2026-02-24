@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from torchvision import transforms
 from torchvision.models import mobilenet_v3_large, mobilenet_v3_small
 
-from stage2_utils import CLASS_NAMES, LABEL_TO_ID, ensure_dir
+from stage2_utils import CLASS_NAMES, LABEL_TO_ID, ensure_dir, resolve_data_root, resolve_workspace_root
 
 try:
     from tqdm import tqdm
@@ -29,12 +29,13 @@ except Exception:  # pragma: no cover - tqdm may be absent in minimal envs
     tqdm = None
 
 
-def default_project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+def default_workspace_root() -> Path:
+    return resolve_workspace_root(Path(__file__))
 
 
 def parse_args() -> argparse.Namespace:
-    project_root = default_project_root()
+    workspace_root = default_workspace_root()
+    data_root = resolve_data_root(workspace_root)
     parser = argparse.ArgumentParser(
         description="Train stage2 MobileNetV3 classifier",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -42,13 +43,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--train-csv",
         type=Path,
-        default=project_root / "data/stage2/meta/train.csv",
+        default=data_root / "stage2/meta/train.csv",
         help="Training metadata CSV",
     )
     parser.add_argument(
         "--val-csv",
         type=Path,
-        default=project_root / "data/stage2/meta/val.csv",
+        default=data_root / "stage2/meta/val.csv",
         help="Validation metadata CSV",
     )
     parser.add_argument("--num-classes", type=int, default=4, help="Number of output classes")
@@ -73,13 +74,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--out-dir",
         type=Path,
-        default=project_root / "tools/runs/traffic_stage2",
+        default=workspace_root / "runs/traffic_stage2",
         help="Output directory for checkpoints and reports",
     )
     parser.add_argument(
         "--export-best",
         type=Path,
-        default=project_root / "tools/weights/stage2_best.pth",
+        default=workspace_root / "weights/stage2_best.pth",
         help="Copy best checkpoint to this path after training",
     )
     parser.add_argument("--num-workers", type=int, default=8, help="DataLoader worker processes")

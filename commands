@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Support both layouts:
-# 1) repo-root/tools/commands with stage scripts under tools/
-# 2) repo-root/commands with stage scripts under repo root
+# 1) workspace-root/commands
+# 2) command script placed in a subdirectory
 if [[ -d "$SCRIPT_DIR/data" && -d "$SCRIPT_DIR/stage1" && -d "$SCRIPT_DIR/stage2" ]]; then
   PROJECT_ROOT="$SCRIPT_DIR"
   TOOLS_DIR="$SCRIPT_DIR"
@@ -37,11 +37,11 @@ fi
 print_help() {
   cat <<'EOF'
 Usage:
-  tools/commands <command> [extra-args...]
+  ./commands <command> [extra-args...]
 
 Commands:
   paths           Print resolved project/data/run paths
-  sync-weights    Copy stage1/2 best weights from runs into tools/weights
+  sync-weights    Copy stage1/2 best weights from runs into weights/
   stage1-train    Train YOLO stage1 detector (traffic light object detection)
   stage1-predict  Run YOLO stage1 prediction on val images
   build-train     Build stage2 train dataset (GT crop)
