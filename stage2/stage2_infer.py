@@ -69,6 +69,7 @@ def parse_args() -> argparse.Namespace:
         help="Output directory for visualization images",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Stage1 detection confidence")
+    parser.add_argument("--iou", type=float, default=0.70, help="Stage1 NMS IoU threshold")
     parser.add_argument(
         "--min-aspect-ratio",
         type=float,
@@ -125,7 +126,7 @@ def to_serializable_bbox(box: np.ndarray) -> List[float]:
     return [float(round(v, 4)) for v in box.tolist()]
 
 
-def draw_detection(image: np.ndarray, bbox: List[float], text: str, color_name: str) -> None:
+def draw_detection(image: np.ndarray, bbox: List[float], conf_text: str, color_name: str) -> None:
     color_map: Dict[str, tuple] = {
         "red": (0, 0, 255),
         "yellow": (0, 255, 255),
@@ -139,10 +140,10 @@ def draw_detection(image: np.ndarray, bbox: List[float], text: str, color_name: 
     ty = max(12, y1 - 6)
     cv2.putText(
         image,
-        text,
+        conf_text,
         (x1, ty),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.4,
+        0.3,
         bgr,
         1,
         lineType=cv2.LINE_AA,
@@ -189,6 +190,7 @@ def run_inference(args: argparse.Namespace) -> None:
         results = yolo.predict(
             source=str(image_path),
             conf=args.conf,
+            iou=args.iou,
             classes=[1],
             imgsz=args.imgsz,
             device=args.device,
@@ -236,7 +238,7 @@ def run_inference(args: argparse.Namespace) -> None:
                 draw_detection(
                     vis,
                     bbox=det_item["bbox"],
-                    text=f"{color}({det_item['det_conf']:.2f}/{det_item['color_conf']:.2f})",
+                    conf_text=f"{det_item['det_conf']:.2f}/{det_item['color_conf']:.2f}",
                     color_name=color,
                 )
 

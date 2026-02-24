@@ -62,6 +62,7 @@ def parse_args() -> argparse.Namespace:
         help="Prediction output root (split dirs will be created under this path)",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Detection confidence threshold")
+    parser.add_argument("--iou", type=float, default=0.70, help="NMS IoU threshold")
     parser.add_argument(
         "--min-aspect-ratio",
         type=float,
@@ -154,6 +155,7 @@ def run_predict_once(
         source=str(source_list_file),
         imgsz=args.imgsz,
         conf=args.conf,
+        iou=args.iou,
         classes=[1],
         device=str(device),
         save=False,
@@ -314,6 +316,8 @@ def run_split(args: argparse.Namespace, split: str) -> None:
                 str(args.stage1_weights),
                 "--conf",
                 str(args.conf),
+                "--iou",
+                str(args.iou),
                 "--imgsz",
                 str(args.imgsz),
                 "--worker-source-list",

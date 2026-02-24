@@ -148,6 +148,12 @@ Main subcommands:
 - `train-stage2`: train Stage2 classifier
 - `infer-stage2`: run final 2-stage inference (JSON + visualization)
 
+Example (override Stage1 NMS IoU):
+
+```bash
+./commands infer-stage2 --iou 0.5
+```
+
 ## Script `--help`
 
 All key scripts expose argparse help with descriptions and defaults.
