@@ -32,13 +32,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/runs/traffic_stage1/weights/best.pt",
+        default=project_root / "tools/weights/stage1_best.pt",
         help="Stage1 YOLO detector checkpoint",
     )
     parser.add_argument(
         "--stage2-weights",
         type=Path,
-        default=project_root / "tools/runs/traffic_stage2/weights/best.pth",
+        default=project_root / "tools/weights/stage2_best.pth",
         help="Stage2 classifier checkpoint",
     )
     parser.add_argument(

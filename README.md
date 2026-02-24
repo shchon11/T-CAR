@@ -32,6 +32,7 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 - Framework: Ultralytics YOLO
 - Base model file: `tools/yolo11s.pt`
 - Default output path: `tools/runs/traffic_stage1`
+- Canonical weight path: `tools/weights/stage1_best.pt`
 - Main artifacts: `weights/best.pt`, `results.csv`, curve/matrix images
 
 ### Stage2
@@ -41,6 +42,7 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 - Optional backbone: `MobileNetV3-Small`
 - Input size: `224x224`
 - Default output path: `tools/runs/traffic_stage2`
+- Canonical weight path: `tools/weights/stage2_best.pth`
 - Main artifacts: `weights/best.pth`, `results.csv`, `confusion_matrix*.csv`, plots
 
 ## Directory Structure
@@ -58,6 +60,9 @@ tools/
   runs/
     traffic_stage1/
     traffic_stage2/
+  weights/
+    stage1_best.pt
+    stage2_best.pth
   commands
   setup_stage2_venv.sh
   requirements.txt
@@ -96,6 +101,7 @@ bash tools/commands paths
 
 Main subcommands:
 
+- `sync-weights`: copy `best.pt`/`best.pth` from run dirs into `tools/weights`
 - `stage1-train`: train Stage1 YOLO detector
 - `stage1-predict`: run Stage1 prediction
 - `build-train`, `build-val`, `build-all`: build Stage2 crop/CSV dataset
@@ -144,7 +150,9 @@ bash tools/commands infer-stage2
 
 ## Output Paths
 
-- Stage1 best weight: `tools/runs/traffic_stage1/weights/best.pt`
-- Stage2 best weight: `tools/runs/traffic_stage2/weights/best.pth`
+- Stage1 best weight (canonical): `tools/weights/stage1_best.pt`
+- Stage2 best weight (canonical): `tools/weights/stage2_best.pth`
+- Stage1 run checkpoint: `tools/runs/traffic_stage1/weights/best.pt`
+- Stage2 run checkpoint: `tools/runs/traffic_stage2/weights/best.pth`
 - Inference JSON: `tools/runs/traffic_stage2/infer/json`
 - Inference visualization: `tools/runs/traffic_stage2/infer/vis`

@@ -5,6 +5,7 @@ TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
 RUNS_DIR="$TOOLS_DIR/runs"
+WEIGHTS_DIR="$TOOLS_DIR/weights"
 STAGE1_DIR="$TOOLS_DIR/stage1"
 STAGE2_DIR="$TOOLS_DIR/stage2"
 if [[ -z "${PYTHON_BIN:-}" ]]; then
@@ -24,6 +25,7 @@ Usage:
 
 Commands:
   paths           Print resolved project/data/run paths
+  sync-weights    Copy stage1/2 best weights from runs into tools/weights
   stage1-train    Train YOLO stage1 detector (traffic light object detection)
   stage1-predict  Run YOLO stage1 prediction on val images
   build-train     Build stage2 train dataset (GT crop)
@@ -50,11 +52,13 @@ STAGE1_DIR=$STAGE1_DIR
 STAGE2_DIR=$STAGE2_DIR
 DATA_DIR=$DATA_DIR
 RUNS_DIR=$RUNS_DIR
+WEIGHTS_DIR=$WEIGHTS_DIR
 PYTHON_BIN=$PYTHON_BIN
 EOF
 }
 
 run_stage1_train() {
+  mkdir -p "$WEIGHTS_DIR"
   CUDA_VISIBLE_DEVICES=0,1,2,3 yolo detect train \
     data="$DATA_DIR/yaml/traffic_stage1.yaml" \
     model="$TOOLS_DIR/yolo11s.pt" \
@@ -67,11 +71,39 @@ run_stage1_train() {
     amp=True \
     name=traffic_stage1 \
     "$@"
+
+  local stage1_best="$RUNS_DIR/traffic_stage1/weights/best.pt"
+  if [[ -f "$stage1_best" ]]; then
+    cp -f "$stage1_best" "$WEIGHTS_DIR/stage1_best.pt"
+    echo "[INFO] synced stage1 weight -> $WEIGHTS_DIR/stage1_best.pt"
+  else
+    echo "[WARN] stage1 best weight not found: $stage1_best"
+  fi
+}
+
+run_sync_weights() {
+  mkdir -p "$WEIGHTS_DIR"
+  local src_stage1="$RUNS_DIR/traffic_stage1/weights/best.pt"
+  local src_stage2="$RUNS_DIR/traffic_stage2/weights/best.pth"
+
+  if [[ -f "$src_stage1" ]]; then
+    cp -f "$src_stage1" "$WEIGHTS_DIR/stage1_best.pt"
+    echo "[INFO] synced stage1 -> $WEIGHTS_DIR/stage1_best.pt"
+  else
+    echo "[WARN] missing stage1 best: $src_stage1"
+  fi
+
+  if [[ -f "$src_stage2" ]]; then
+    cp -f "$src_stage2" "$WEIGHTS_DIR/stage2_best.pth"
+    echo "[INFO] synced stage2 -> $WEIGHTS_DIR/stage2_best.pth"
+  else
+    echo "[WARN] missing stage2 best: $src_stage2"
+  fi
 }
 
 run_stage1_predict() {
   yolo detect predict \
-    model="$RUNS_DIR/traffic_stage1/weights/best.pt" \
+    model="$WEIGHTS_DIR/stage1_best.pt" \
     source="$DATA_DIR/yolo/images/val" \
     imgsz=640 \
     conf=0.25 \
@@ -125,8 +157,8 @@ run_train_stage2() {
 
 run_infer_stage2() {
   "$PYTHON_BIN" "$STAGE2_DIR/stage2_infer.py" \
-    --stage1-weights "$RUNS_DIR/traffic_stage1/weights/best.pt" \
-    --stage2-weights "$RUNS_DIR/traffic_stage2/weights/best.pth" \
+    --stage1-weights "$WEIGHTS_DIR/stage1_best.pt" \
+    --stage2-weights "$WEIGHTS_DIR/stage2_best.pth" \
     --source "$DATA_DIR/yolo/images/val" \
     --out-json-dir "$RUNS_DIR/traffic_stage2/infer/json" \
     --out-vis-dir "$RUNS_DIR/traffic_stage2/infer/vis" \
@@ -153,6 +185,7 @@ shift || true
 case "$CMD" in
   help|-h|--help) print_help ;;
   paths) print_paths ;;
+  sync-weights) run_sync_weights ;;
   stage1-train) run_stage1_train "$@" ;;
   stage1-predict) run_stage1_predict "$@" ;;
   build-train) run_build_train "$@" ;;

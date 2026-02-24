@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import math
+import shutil
 from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
@@ -74,6 +75,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=project_root / "tools/runs/traffic_stage2",
         help="Output directory for checkpoints and reports",
+    )
+    parser.add_argument(
+        "--export-best",
+        type=Path,
+        default=project_root / "tools/weights/stage2_best.pth",
+        help="Copy best checkpoint to this path after training",
     )
     parser.add_argument("--num-workers", type=int, default=8, help="DataLoader worker processes")
     parser.add_argument("--amp", dest="amp", action="store_true")
@@ -682,6 +689,11 @@ def main() -> None:
     }
     with open(args.out_dir / "best_metrics.json", "w", encoding="utf-8") as f:
         json.dump(best_metrics, f, ensure_ascii=False, indent=2)
+
+    if args.export_best is not None:
+        ensure_dir(args.export_best.parent)
+        shutil.copy2(weights_dir / "best.pth", args.export_best)
+        print(f"[INFO] Exported best checkpoint: {args.export_best}")
 
     print(f"[INFO] Best checkpoint: {weights_dir / 'best.pth'}")
     print(f"[INFO] Best metrics json: {args.out_dir / 'best_metrics.json'}")
