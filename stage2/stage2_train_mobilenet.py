@@ -28,11 +28,29 @@ except Exception:  # pragma: no cover - tqdm may be absent in minimal envs
     tqdm = None
 
 
+def default_project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train stage2 MobileNetV3 classifier")
-    parser.add_argument("--train-csv", type=Path, required=True)
-    parser.add_argument("--val-csv", type=Path, required=True)
-    parser.add_argument("--num-classes", type=int, default=4)
+    project_root = default_project_root()
+    parser = argparse.ArgumentParser(
+        description="Train stage2 MobileNetV3 classifier",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--train-csv",
+        type=Path,
+        default=project_root / "data/stage2/meta/train.csv",
+        help="Training metadata CSV",
+    )
+    parser.add_argument(
+        "--val-csv",
+        type=Path,
+        default=project_root / "data/stage2/meta/val.csv",
+        help="Validation metadata CSV",
+    )
+    parser.add_argument("--num-classes", type=int, default=4, help="Number of output classes")
     parser.add_argument(
         "--backbone",
         type=str,
@@ -40,21 +58,31 @@ def parse_args() -> argparse.Namespace:
         choices=["mobilenet_v3_large", "mobilenet_v3_small"],
         help="Classifier backbone architecture",
     )
-    parser.add_argument("--epochs", type=int, default=30)
-    parser.add_argument("--batch-size", type=int, default=256)
-    parser.add_argument("--lr", type=float, default=3e-4)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
-    parser.add_argument("--patience", type=int, default=5)
-    parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--num-workers", type=int, default=8)
+    parser.add_argument("--epochs", type=int, default=30, help="Maximum training epochs")
+    parser.add_argument("--batch-size", type=int, default=256, help="Global batch size")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Initial learning rate")
+    parser.add_argument("--weight-decay", type=float, default=1e-4, help="AdamW weight decay")
+    parser.add_argument("--patience", type=int, default=5, help="Early stopping patience (macro-F1)")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        help="Torch device. Examples: auto, cpu, cuda:0, cuda:0,1,2,3",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=project_root / "tools/runs/traffic_stage2",
+        help="Output directory for checkpoints and reports",
+    )
+    parser.add_argument("--num-workers", type=int, default=8, help="DataLoader worker processes")
     parser.add_argument("--amp", dest="amp", action="store_true")
     parser.add_argument("--no-amp", dest="amp", action="store_false")
     parser.set_defaults(amp=True)
     parser.add_argument("--progress", dest="progress", action="store_true")
     parser.add_argument("--no-progress", dest="progress", action="store_false")
     parser.set_defaults(progress=True)
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
 
 

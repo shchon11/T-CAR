@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import argparse
 import os
 import json
 import tarfile
@@ -36,6 +37,59 @@ TRAIN_RATIO = 0.9
 SEED = 42
 
 IMG_EXTS = {".jpg", ".jpeg", ".png"}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Convert AIHub raw tar/json data into YOLO train/val image+label dataset",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Project root used for default path resolution",
+    )
+    parser.add_argument(
+        "--root-055",
+        type=Path,
+        default=ROOT_055,
+        help="AIHub raw root (.../1.Training)",
+    )
+    parser.add_argument(
+        "--img-tar-dir",
+        type=Path,
+        default=IMG_TAR_DIR,
+        help="Directory containing source image tar files",
+    )
+    parser.add_argument(
+        "--lbl-tar-dir",
+        type=Path,
+        default=LBL_TAR_DIR,
+        help="Directory containing label json tar files",
+    )
+    parser.add_argument(
+        "--tmp-img-dir",
+        type=Path,
+        default=TMP_IMG_DIR,
+        help="Temporary extraction directory for source images",
+    )
+    parser.add_argument(
+        "--tmp-lbl-dir",
+        type=Path,
+        default=TMP_LBL_DIR,
+        help="Temporary extraction directory for labels",
+    )
+    parser.add_argument(
+        "--yolo-root",
+        type=Path,
+        default=YOLO_ROOT,
+        help="Output YOLO dataset root",
+    )
+    parser.add_argument("--train-ratio", type=float, default=TRAIN_RATIO, help="Train split ratio")
+    parser.add_argument("--seed", type=int, default=SEED, help="Random seed")
+    return parser.parse_args()
+
 
 # =========================
 # UTILS
@@ -126,6 +180,21 @@ def parse_one_json(jpath: Path):
     return img_name, lines
 
 def main():
+    global ROOT_055, IMG_TAR_DIR, LBL_TAR_DIR, TMP_IMG_DIR, TMP_LBL_DIR, YOLO_ROOT, OUT_IMG, OUT_LBL
+    global TRAIN_RATIO, SEED
+    args = parse_args()
+
+    ROOT_055 = Path(args.root_055)
+    IMG_TAR_DIR = Path(args.img_tar_dir)
+    LBL_TAR_DIR = Path(args.lbl_tar_dir)
+    TMP_IMG_DIR = Path(args.tmp_img_dir)
+    TMP_LBL_DIR = Path(args.tmp_lbl_dir)
+    YOLO_ROOT = Path(args.yolo_root)
+    OUT_IMG = {"train": YOLO_ROOT / "images/train", "val": YOLO_ROOT / "images/val"}
+    OUT_LBL = {"train": YOLO_ROOT / "labels/train", "val": YOLO_ROOT / "labels/val"}
+    TRAIN_RATIO = float(args.train_ratio)
+    SEED = int(args.seed)
+
     random.seed(SEED)
     ensure_dirs()
 

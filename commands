@@ -1,82 +1,169 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolve project paths dynamically (no hardcoded absolute paths).
 TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
 RUNS_DIR="$TOOLS_DIR/runs"
+STAGE1_DIR="$TOOLS_DIR/stage1"
 STAGE2_DIR="$TOOLS_DIR/stage2"
+if [[ -z "${PYTHON_BIN:-}" ]]; then
+  if [[ -x "$PROJECT_ROOT/.venv/bin/python" ]]; then
+    PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python"
+  elif [[ -x "$PROJECT_ROOT/.venv-stage2/bin/python" ]]; then
+    PYTHON_BIN="$PROJECT_ROOT/.venv-stage2/bin/python"
+  else
+    PYTHON_BIN="python3"
+  fi
+fi
 
-# 0) (optional) stage1 train
-CUDA_VISIBLE_DEVICES=0,1,2,3 yolo detect train \
-  data="$DATA_DIR/yaml/traffic_stage1.yaml" \
-  model="$TOOLS_DIR/yolo11s.pt" \
-  imgsz=640 \
-  epochs=200 \
-  batch=256 \
-  device=0,1,2,3 \
-  workers=20 \
-  cache=disk \
-  amp=True \
-  name=traffic_stage1
+print_help() {
+  cat <<'EOF'
+Usage:
+  tools/commands <command> [extra-args...]
 
-# 1) (optional) stage1 validation predict
-yolo detect predict \
-  model="$RUNS_DIR/detect/traffic_stage14/weights/best.pt" \
-  source="$DATA_DIR/yolo/images/val" \
-  imgsz=640 \
-  conf=0.25 \
-  device=0 \
-  name=traffic_stage1_val
+Commands:
+  paths           Print resolved project/data/run paths
+  stage1-train    Train YOLO stage1 detector (traffic light object detection)
+  stage1-predict  Run YOLO stage1 prediction on val images
+  build-train     Build stage2 train dataset (GT crop)
+  build-val       Build stage2 val dataset (GT crop)
+  build-all       Run build-train and build-val
+  train-stage2    Train stage2 classifier (MobileNetV3-Large)
+  infer-stage2    Run final 2-stage inference (YOLO + classifier)
+  scripts-help    Show --help for all stage scripts
+  help            Show this help
 
-# 2) stage2 dataset build - train (GT box direct)
-python3 "$STAGE2_DIR/stage2_build_dataset.py" \
-  --box-source gt \
-  --yolo-image-dir "$DATA_DIR/yolo/images/train" \
-  --raw-json-root "$DATA_DIR/raw" \
-  --split train \
-  --out-crops-root "$DATA_DIR/stage2/crops" \
-  --out-meta "$DATA_DIR/stage2/meta/train.csv" \
-  --summary-json "$DATA_DIR/stage2/meta/train_summary.json" \
-  --padding-ratio 0.1 \
-  --min-aspect-ratio 2.0
+Notes:
+  - Commands run with project-relative default paths.
+  - Any [extra-args...] are appended to the underlying command.
+  - PYTHON_BIN auto-detect order: .venv -> .venv-stage2 -> python3.
+  - Set PYTHON_BIN explicitly to override.
+EOF
+}
 
-# 3) stage2 dataset build - val (GT box direct)
-python3 "$STAGE2_DIR/stage2_build_dataset.py" \
-  --box-source gt \
-  --yolo-image-dir "$DATA_DIR/yolo/images/val" \
-  --raw-json-root "$DATA_DIR/raw" \
-  --split val \
-  --out-crops-root "$DATA_DIR/stage2/crops" \
-  --out-meta "$DATA_DIR/stage2/meta/val.csv" \
-  --summary-json "$DATA_DIR/stage2/meta/val_summary.json" \
-  --padding-ratio 0.1 \
-  --min-aspect-ratio 2.0
+print_paths() {
+  cat <<EOF
+PROJECT_ROOT=$PROJECT_ROOT
+TOOLS_DIR=$TOOLS_DIR
+STAGE1_DIR=$STAGE1_DIR
+STAGE2_DIR=$STAGE2_DIR
+DATA_DIR=$DATA_DIR
+RUNS_DIR=$RUNS_DIR
+PYTHON_BIN=$PYTHON_BIN
+EOF
+}
 
-# 4) stage2 train (MobileNetV3-Large)
-python3 "$STAGE2_DIR/stage2_train_mobilenet.py" \
-  --train-csv "$DATA_DIR/stage2/meta/train.csv" \
-  --val-csv "$DATA_DIR/stage2/meta/val.csv" \
-  --num-classes 4 \
-  --backbone mobilenet_v3_large \
-  --epochs 200 \
-  --batch-size 256 \
-  --lr 3e-4 \
-  --patience 200 \
-  --device cuda:0,1,2,3 \
-  --out-dir "$RUNS_DIR/classify/traffic_stage2_mnv3s"
+run_stage1_train() {
+  CUDA_VISIBLE_DEVICES=0,1,2,3 yolo detect train \
+    data="$DATA_DIR/yaml/traffic_stage1.yaml" \
+    model="$TOOLS_DIR/yolo11s.pt" \
+    imgsz=640 \
+    epochs=200 \
+    batch=256 \
+    device=0,1,2,3 \
+    workers=20 \
+    cache=disk \
+    amp=True \
+    name=traffic_stage1 \
+    "$@"
+}
 
-# 5) final 2-stage inference
-python3 "$STAGE2_DIR/stage2_infer.py" \
-  --stage1-weights "$RUNS_DIR/detect/traffic_stage14/weights/best.pt" \
-  --stage2-weights "$RUNS_DIR/classify/traffic_stage2_mnv3s/weights/best.pth" \
-  --source "$DATA_DIR/yolo/images/val" \
-  --out-json-dir "$RUNS_DIR/two_stage_infer/json" \
-  --out-vis-dir "$RUNS_DIR/two_stage_infer/vis" \
-  --conf 0.40 \
-  --min-aspect-ratio 2.0 \
-  --padding-ratio 0.1 \
-  --imgsz 640 \
-  --device 0 \
-  --cls-device cuda:0
+run_stage1_predict() {
+  yolo detect predict \
+    model="$RUNS_DIR/traffic_stage1/weights/best.pt" \
+    source="$DATA_DIR/yolo/images/val" \
+    imgsz=640 \
+    conf=0.25 \
+    device=0 \
+    name=traffic_stage1_val \
+    "$@"
+}
+
+run_build_train() {
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_build_dataset.py" \
+    --box-source gt \
+    --split train \
+    --yolo-image-dir "$DATA_DIR/yolo/images/train" \
+    --raw-json-root "$DATA_DIR/raw" \
+    --out-crops-root "$DATA_DIR/stage2/crops" \
+    --out-meta "$DATA_DIR/stage2/meta/train.csv" \
+    --summary-json "$DATA_DIR/stage2/meta/train_summary.json" \
+    --padding-ratio 0.1 \
+    --min-aspect-ratio 2.0 \
+    "$@"
+}
+
+run_build_val() {
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_build_dataset.py" \
+    --box-source gt \
+    --split val \
+    --yolo-image-dir "$DATA_DIR/yolo/images/val" \
+    --raw-json-root "$DATA_DIR/raw" \
+    --out-crops-root "$DATA_DIR/stage2/crops" \
+    --out-meta "$DATA_DIR/stage2/meta/val.csv" \
+    --summary-json "$DATA_DIR/stage2/meta/val_summary.json" \
+    --padding-ratio 0.1 \
+    --min-aspect-ratio 2.0 \
+    "$@"
+}
+
+run_train_stage2() {
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_train_mobilenet.py" \
+    --train-csv "$DATA_DIR/stage2/meta/train.csv" \
+    --val-csv "$DATA_DIR/stage2/meta/val.csv" \
+    --num-classes 4 \
+    --backbone mobilenet_v3_large \
+    --epochs 200 \
+    --batch-size 256 \
+    --lr 3e-4 \
+    --patience 200 \
+    --device cuda:0,1,2,3 \
+    --out-dir "$RUNS_DIR/traffic_stage2" \
+    "$@"
+}
+
+run_infer_stage2() {
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_infer.py" \
+    --stage1-weights "$RUNS_DIR/traffic_stage1/weights/best.pt" \
+    --stage2-weights "$RUNS_DIR/traffic_stage2/weights/best.pth" \
+    --source "$DATA_DIR/yolo/images/val" \
+    --out-json-dir "$RUNS_DIR/traffic_stage2/infer/json" \
+    --out-vis-dir "$RUNS_DIR/traffic_stage2/infer/vis" \
+    --conf 0.40 \
+    --min-aspect-ratio 2.0 \
+    --padding-ratio 0.1 \
+    --imgsz 640 \
+    --device 0 \
+    --cls-device cuda:0 \
+    "$@"
+}
+
+show_scripts_help() {
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_generate_preds.py" --help
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_build_dataset.py" --help
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_train_mobilenet.py" --help
+  "$PYTHON_BIN" "$STAGE2_DIR/stage2_infer.py" --help
+  "$PYTHON_BIN" "$STAGE1_DIR/conver_to_yolo.py" --help
+}
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+  help|-h|--help) print_help ;;
+  paths) print_paths ;;
+  stage1-train) run_stage1_train "$@" ;;
+  stage1-predict) run_stage1_predict "$@" ;;
+  build-train) run_build_train "$@" ;;
+  build-val) run_build_val "$@" ;;
+  build-all) run_build_train "$@"; run_build_val "$@" ;;
+  train-stage2) run_train_stage2 "$@" ;;
+  infer-stage2) run_infer_stage2 "$@" ;;
+  scripts-help) show_scripts_help ;;
+  *)
+    echo "[ERR] Unknown command: $CMD" >&2
+    print_help
+    exit 1
+    ;;
+esac

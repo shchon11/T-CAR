@@ -36,11 +36,14 @@ def default_project_root() -> Path:
 
 def parse_args() -> argparse.Namespace:
     project_root = default_project_root()
-    parser = argparse.ArgumentParser(description="Generate stage1 predictions for stage2 pipeline")
+    parser = argparse.ArgumentParser(
+        description="Generate stage1 predictions for stage2 pipeline",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--stage1-weights",
         type=Path,
-        default=project_root / "tools/runs/detect/traffic_stage14/weights/best.pt",
+        default=project_root / "tools/runs/traffic_stage1/weights/best.pt",
         help="Path to stage1 YOLO weight (.pt)",
     )
     parser.add_argument(
@@ -53,7 +56,7 @@ def parse_args() -> argparse.Namespace:
         "--out-dir",
         type=Path,
         default=project_root / "data/stage2/preds",
-        help="Prediction output root",
+        help="Prediction output root (split dirs will be created under this path)",
     )
     parser.add_argument("--conf", type=float, default=0.40, help="Detection confidence threshold")
     parser.add_argument(

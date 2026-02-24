@@ -46,8 +46,16 @@ CSV_COLUMNS = [
 ]
 
 
+def default_project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build stage2 classification dataset")
+    project_root = default_project_root()
+    parser = argparse.ArgumentParser(
+        description="Build stage2 classification dataset (GT-direct or stage1-pred matched)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--box-source",
         type=str,
@@ -59,16 +67,42 @@ def parse_args() -> argparse.Namespace:
         "--pred-label-dir",
         type=Path,
         default=None,
-        help="Predicted label txt directory (required only when --box-source pred)",
+        help="Predicted label txt directory (pred mode only, auto-derived from split when omitted)",
     )
-    parser.add_argument("--yolo-image-dir", type=Path, required=True, help="YOLO image split directory")
-    parser.add_argument("--raw-json-root", type=Path, required=True, help="Raw json root")
-    parser.add_argument("--split", type=str, required=True, choices=["train", "val"])
-    parser.add_argument("--out-crops-root", type=Path, required=True, help="Output crop root")
-    parser.add_argument("--out-meta", type=Path, required=True, help="Output metadata csv path")
+    parser.add_argument(
+        "--yolo-image-dir",
+        type=Path,
+        default=None,
+        help="YOLO image split directory (auto: data/yolo/images/<split>)",
+    )
+    parser.add_argument(
+        "--raw-json-root",
+        type=Path,
+        default=project_root / "data/raw",
+        help="Raw json root",
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="train",
+        choices=["train", "val"],
+        help="Dataset split to process",
+    )
+    parser.add_argument(
+        "--out-crops-root",
+        type=Path,
+        default=project_root / "data/stage2/crops",
+        help="Output crop root",
+    )
+    parser.add_argument(
+        "--out-meta",
+        type=Path,
+        default=None,
+        help="Output metadata csv path (auto: data/stage2/meta/<split>.csv)",
+    )
     parser.add_argument("--summary-json", type=Path, default=None, help="Optional summary json output path")
     parser.add_argument("--iou-thr", type=float, default=0.5, help="IoU threshold for pred->gt match")
-    parser.add_argument("--padding-ratio", type=float, default=0.1)
+    parser.add_argument("--padding-ratio", type=float, default=0.1, help="BBox padding ratio before crop")
     parser.add_argument("--target-type", type=str, default="car", help="traffic_light type filter")
     parser.add_argument("--pred-class-id", type=int, default=1, help="stage1 traffic_light class id")
     parser.add_argument(
@@ -84,11 +118,20 @@ def parse_args() -> argparse.Namespace:
         help="Keep only bbox with width/height >= this ratio (0 disables filter)",
     )
     parser.add_argument("--min-crop-size", type=int, default=10, help="Minimum crop width/height")
-    parser.add_argument("--progress-every", type=int, default=5000)
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=5000,
+        help="Print progress every N images (0 to disable)",
+    )
     args = parser.parse_args()
 
+    if args.yolo_image_dir is None:
+        args.yolo_image_dir = project_root / "data/yolo/images" / args.split
+    if args.out_meta is None:
+        args.out_meta = project_root / "data/stage2/meta" / f"{args.split}.csv"
     if args.box_source == "pred" and args.pred_label_dir is None:
-        raise ValueError("--pred-label-dir is required when --box-source=pred")
+        args.pred_label_dir = project_root / "data/stage2/preds" / args.split / "labels"
     return args
 
 

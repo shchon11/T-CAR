@@ -19,22 +19,55 @@ from torchvision.models import mobilenet_v3_large, mobilenet_v3_small
 from stage2_utils import CLASS_NAMES, ensure_dir, is_horizontal_bbox, list_images, pad_bbox
 
 
+def default_project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Two-stage traffic-light color inference")
-    parser.add_argument("--stage1-weights", type=Path, required=True)
-    parser.add_argument("--stage2-weights", type=Path, required=True)
-    parser.add_argument("--source", type=Path, required=True, help="Single image or directory")
-    parser.add_argument("--out-json-dir", type=Path, required=True)
-    parser.add_argument("--out-vis-dir", type=Path, required=True)
-    parser.add_argument("--conf", type=float, default=0.40)
+    project_root = default_project_root()
+    parser = argparse.ArgumentParser(
+        description="Two-stage traffic-light color inference",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--stage1-weights",
+        type=Path,
+        default=project_root / "tools/runs/traffic_stage1/weights/best.pt",
+        help="Stage1 YOLO detector checkpoint",
+    )
+    parser.add_argument(
+        "--stage2-weights",
+        type=Path,
+        default=project_root / "tools/runs/traffic_stage2/weights/best.pth",
+        help="Stage2 classifier checkpoint",
+    )
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=project_root / "data/yolo/images/val",
+        help="Single image or directory",
+    )
+    parser.add_argument(
+        "--out-json-dir",
+        type=Path,
+        default=project_root / "tools/runs/traffic_stage2/infer/json",
+        help="Output directory for per-image JSON results",
+    )
+    parser.add_argument(
+        "--out-vis-dir",
+        type=Path,
+        default=project_root / "tools/runs/traffic_stage2/infer/vis",
+        help="Output directory for visualization images",
+    )
+    parser.add_argument("--conf", type=float, default=0.40, help="Stage1 detection confidence")
     parser.add_argument(
         "--min-aspect-ratio",
         type=float,
         default=1.2,
         help="Keep only stage1 bbox with width/height >= this ratio",
     )
-    parser.add_argument("--padding-ratio", type=float, default=0.1)
-    parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--padding-ratio", type=float, default=0.1, help="BBox padding ratio before crop")
+    parser.add_argument("--imgsz", type=int, default=640, help="YOLO inference image size")
     parser.add_argument("--device", type=str, default="0", help="YOLO device string")
     parser.add_argument("--cls-device", type=str, default="auto", help="Classifier torch device")
     parser.add_argument(
