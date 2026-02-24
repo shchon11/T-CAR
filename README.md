@@ -30,7 +30,7 @@ Composite states (for example, `red+yellow`) are dropped, and no-active-light ca
 ### Stage1
 
 - Framework: Ultralytics YOLO
-- Base model file: `tools/yolo11s.pt`
+- Base model: `yolo11s`
 - Default output path: `tools/runs/traffic_stage1`
 - Main artifacts: `weights/best.pt`, `results.csv`, curve/matrix images
 
